@@ -12,6 +12,17 @@
 #define STB_IMAGE_WRITE_IMPLEMENTATION
 #include "stb_image_write.h"
 
+/* struct to handle all the parameters that must be passes into thread 
+    (since threads can only take a single void* parameter) */
+typedef struct{
+    uint8_t* data;
+    Image srcImage;
+    Image destImage;
+    Matrix algorithm;
+    int start_line;
+    int end_line;
+} threadData;
+
 //An array of kernel matrices to be used for image convolution.  
 //The indexes of these match the enumeration from the header file. ie. algorithms[BLUR] returns the kernel corresponding to a box blur.
 Matrix algorithms[]={
@@ -72,6 +83,13 @@ void convolute(Image* srcImage,Image* destImage,Matrix algorithm){
     }
 }
 
+// can only pass in one void pointer, but can be a struct
+// can't make a new struct cause cannot modify header file but do have the Image struct? ASK PROFESSOR IF ALLOWED/OFFICE HOURS
+//    NVM can declare it in source files
+// IDEA: pass an Image struct that points to a chunk of the srcImage 
+void* thread_loop(void* threadData) {
+  
+}
 
 //Usage: Prints usage information for the program
 //Returns: -1
