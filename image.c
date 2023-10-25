@@ -63,6 +63,7 @@ void convolute(Image* srcImage,Image* destImage,Matrix algorithm){
     span=srcImage->bpp*srcImage->bpp; // what is span used for here?
     // PARALLIZE HERE BY ROW, may need to create another function to create threads for? or call convelute in each thread?
     for (row=0;row<srcImage->height;row++){
+        // launch thread
         for (pix=0;pix<srcImage->width;pix++){
             for (bit=0;bit<srcImage->bpp;bit++){
                 destImage->data[Index(pix,row,srcImage->width,bit,srcImage->bpp)]=getPixelValue(srcImage,pix,row,bit,algorithm);
@@ -70,6 +71,7 @@ void convolute(Image* srcImage,Image* destImage,Matrix algorithm){
         }
     }
 }
+
 
 //Usage: Prints usage information for the program
 //Returns: -1
