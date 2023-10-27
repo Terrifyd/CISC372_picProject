@@ -72,7 +72,21 @@ uint8_t getPixelValue(Image* srcImage,int x,int y,int bit,Matrix algorithm){
 void convolute(Image* srcImage,Image* destImage,Matrix algorithm){
     int row,pix,bit,span;
     span=srcImage->bpp*srcImage->bpp; // what is span used for here?
-    // PARALLIZE HERE BY ROW, may need to create another function to create threads for? or call convelute in each thread?
+    
+    struct ThreadData* threadPointer;
+    threadPointer->srcImage=srcImage;
+    threadPointer->destImage=destImage;
+    threadPointer->algorithm=algorithm;
+    //threadPointer->data=malloc(sizeof(uint8_t)*destImage->width*destImage->bpp*destImage->height);
+
+    pthread_t threads[srcImage->height];
+    struct ThreadData* threadArgs[srcImage->height];
+    for (row=0;row<srcImage->height;row++){
+        threadArgs[row]->start_line = row;
+        pthread_create(&threads[row], NULL, thread_loop, &threadArgs[row])
+    } 
+
+/*     // PARALLIZE HERE BY ROW, may need to create another function to create threads for? or call convelute in each thread?
     for (row=0;row<srcImage->height;row++){
         // launch thread
         for (pix=0;pix<srcImage->width;pix++){
@@ -80,8 +94,8 @@ void convolute(Image* srcImage,Image* destImage,Matrix algorithm){
                 destImage->data[Index(pix,row,srcImage->width,bit,srcImage->bpp)]=getPixelValue(srcImage,pix,row,bit,algorithm);
             }
         }
-    }
-}
+    } */
+} 
 
 // can only pass in one void pointer, but can be a struct
 // can't make a new struct cause cannot modify header file but do have the Image struct? ASK PROFESSOR IF ALLOWED/OFFICE HOURS
@@ -97,6 +111,7 @@ void* thread_loop(void* threadPointer) {
     Image* srcImage = dataPointer->srcImage;
     Image* destImage = dataPointer->destImage;
 
+    // may try make each thread a row instead?
     int row,pix,bit;
     for (row=start_line;row<end_line;row++){
         // launch thread
