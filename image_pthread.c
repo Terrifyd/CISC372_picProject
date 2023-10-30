@@ -101,8 +101,9 @@ void convolute(Image* srcImage,Image* destImage,Matrix algorithm){
     struct ThreadData threadPointer = threadData;
     threadPointer.srcImage=srcImage;
     threadPointer.destImage=destImage;
-    for (int i=0;i<3;i++) {
-        for (int j=0;j<3;j++) {
+    int i,j;
+    for (i=0;i<3;i++) {
+        for (j=0;j<3;j++) {
             threadPointer.algorithm[i][j]=algorithm[i][j];  
         }
     }
@@ -118,7 +119,6 @@ void convolute(Image* srcImage,Image* destImage,Matrix algorithm){
 /*         if (threadArgs[row].start_line >= threadArgs[row].end_line) { // For n=1 case
             threadArgs[row].end_line = threadArgs[row].start_line + 1;
         } */
-        //printf("Starting at %i and ending at %i\n", threadArgs[row].start_line, threadArgs[row].end_line);
         pthread_create(&threads[row], NULL, &thread_loop, &threadArgs[row]);
     } 
 
