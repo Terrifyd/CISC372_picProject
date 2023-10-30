@@ -64,32 +64,37 @@ uint8_t getPixelValue(Image* srcImage,int x,int y,int bit,Matrix algorithm){
     return result;
 }
 
-
 // can only pass in one void pointer, but can be a struct
 // can't make a new struct cause cannot modify header file but do have the Image struct? ASK PROFESSOR IF ALLOWED/OFFICE HOURS
 //    NVM can declare it in source files
 // IDEA: pass an Image struct that points to a chunk of the srcImage 
 void* thread_loop(void* threadPointer) {
-    printf("in thread loop\n");
     struct ThreadData* dataPointer = (struct ThreadData*)threadPointer;
 
+    printf("DATA: %p\n", (void*) dataPointer);
+
     int start_line = dataPointer->start_line;
+    printf("in thread %i\n", start_line);
+    printf("%i\n",start_line);
     int end_line = dataPointer->end_line;
-    uint8_t* data = dataPointer->data;
+    //uint8_t* data = dataPointer->data;
     //Matrix* algorithm = dataPointer->algorithm;
-    Image* srcImage = dataPointer->srcImage;
-    Image* destImage = dataPointer->destImage;
+    //Image* srcImage = dataPointer->srcImage;
+    //Image* destImage = dataPointer->destImage;
 
     // may try make each thread a row instead?
     int row,pix,bit;
     for (row=start_line;row<end_line;row++){
         // launch thread
-        for (pix=0;pix<srcImage->width;pix++){
-            for (bit=0;bit<srcImage->bpp;bit++){
-                destImage->data[Index(pix,row,srcImage->width,bit,srcImage->bpp)]=getPixelValue(srcImage,pix,row,bit,dataPointer->algorithm);
+        for (pix=0;pix<dataPointer->srcImage->width;pix++){
+            for (bit=0;bit<dataPointer->srcImage->bpp;bit++){
+                dataPointer->destImage->data[Index(pix,row,dataPointer->srcImage->width,bit,dataPointer->srcImage->bpp)]
+                    =getPixelValue(dataPointer->srcImage,pix,row,bit,dataPointer->algorithm);
             }
         }
     }
+    
+    return NULL;
 }
 
 //convolute:  Applies a kernel matrix to an image
@@ -103,28 +108,34 @@ void convolute(Image* srcImage,Image* destImage,Matrix algorithm){
     span=srcImage->bpp*srcImage->bpp; // what is span used for here?
     
     struct ThreadData threadData;
-    struct ThreadData* threadPointer = &threadData;
+    struct ThreadData threadPointer = threadData;
     printf("before\n");
-    threadPointer->srcImage=srcImage;
+    threadPointer.srcImage=srcImage;
     printf("after\n");
-    threadPointer->destImage=destImage;
+    threadPointer.destImage=destImage;
     for (int i=0;i<3;i++) {
         for (int j=0;j<3;j++) {
-            threadPointer->algorithm[i][j]=algorithm[i][j];  
+            threadPointer.algorithm[i][j]=algorithm[i][j];  
         }
     }
     //threadPointer->algorithm[0][0]=algorithm[0][0];
     //threadPointer->data=malloc(sizeof(uint8_t)*destImage->width*destImage->bpp*destImage->height);
 
     // threadArgs is an empty pointer and also never does threadData get passed, need to do without race conditions
+    int n = 2;
+    int height = srcImage->height / n;
     pthread_t threads[srcImage->height];
-    struct ThreadData* threadArgs[srcImage->height];
-    for (row=0;row<srcImage->height;row++){
-        threadArgs[row]->start_line = row;
+    struct ThreadData threadArgs[srcImage->height];
+    //printf("HEIGHT = %i\n", srcImage->height);
+    for (row=0;row<height;row++){
+        threadArgs[row] = threadPointer;
+        threadArgs[row].start_line = row * n;
+        threadArgs[row].end_line = ((row + 1) * n) - 1;
+        printf("CON start_line: %i\n",threadArgs[row].start_line);
         pthread_create(&threads[row], NULL, &thread_loop, &threadArgs[row]);
     } 
 
-    for (row=0;row<srcImage->height;row++) {
+    for (row=0;row<height;row++) {
         pthread_join(threads[row], NULL);
     }
 
