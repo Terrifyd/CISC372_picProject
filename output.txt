@@ -1,0 +1,9 @@
+Script started on Mon Oct 30 19:51:20 2023
+]0;turnerde@r1n00.darwin:~/pic_project/CISC372_picProject[?1034h[turnerde@r1n00 CISC372_picProject]$ exitworkgroup -mhg ea-cisc372h[Km[8Pexit[K./image_p pic1.jpg edge
+Took 7 seconds
+]0;turnerde@r1n00.darwin:~/pic_project/CISC372_picProject[turnerde@r1n00 CISC372_picProject]$ ./image_p pic1.jpg edge[1P[1@o
+Took 8 seconds
+]0;turnerde@r1n00.darwin:~/pic_project/CISC372_picProject[turnerde@r1n00 CISC372_picProject]$ exit
+exit
+
+Script done on Mon Oct 30 19:52:01 2023
