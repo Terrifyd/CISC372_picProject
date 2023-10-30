@@ -64,27 +64,18 @@ uint8_t getPixelValue(Image* srcImage,int x,int y,int bit,Matrix algorithm){
     return result;
 }
 
-// can only pass in one void pointer, but can be a struct
-// can't make a new struct cause cannot modify header file but do have the Image struct? ASK PROFESSOR IF ALLOWED/OFFICE HOURS
-//    NVM can declare it in source files
-// IDEA: pass an Image struct that points to a chunk of the srcImage 
+//thread_loop:  a threaded function to call getPixel value for each line that a thread covers
+//Parameters: threadPointer: a void pointer that can be cast to the ThreadData struct and holds all the values needed for thread
+//Returns: Nothing
 void* thread_loop(void* threadPointer) {
     struct ThreadData* dataPointer = (struct ThreadData*)threadPointer;
 
-    //printf("DATA: %p\n", (void*) dataPointer);
-
     int start_line = dataPointer->start_line;
-    //printf("in thread %i\n", start_line);
-    //printf("%i\n",start_line);
     int end_line = dataPointer->end_line;
-    //uint8_t* data = dataPointer->data;
-    //Matrix* algorithm = dataPointer->algorithm;
-    //Image* srcImage = dataPointer->srcImage;
-    //Image* destImage = dataPointer->destImage;
 
     // may try make each thread a row instead?
     int row,pix,bit;
-    for (row=start_line;row<end_line;row++){
+    for (row=start_line;row<=end_line;row++){
         // launch thread
         for (pix=0;pix<dataPointer->srcImage->width;pix++){
             for (bit=0;bit<dataPointer->srcImage->bpp;bit++){
@@ -103,7 +94,6 @@ void* thread_loop(void* threadPointer) {
 //            algorithm: The kernel matrix to use for the convolution
 //Returns: Nothing
 void convolute(Image* srcImage,Image* destImage,Matrix algorithm){
-    // printf("in convolute\n");
     int row,pix,bit,span;
     span=srcImage->bpp*srcImage->bpp; // what is span used for here?
     
@@ -116,10 +106,7 @@ void convolute(Image* srcImage,Image* destImage,Matrix algorithm){
             threadPointer.algorithm[i][j]=algorithm[i][j];  
         }
     }
-    //threadPointer->algorithm[0][0]=algorithm[0][0];
-    //threadPointer->data=malloc(sizeof(uint8_t)*destImage->width*destImage->bpp*destImage->height);
 
-    // threadArgs is an empty pointer and also never does threadData get passed, need to do without race conditions
     int n = 2;
     int height = srcImage->height / n;
     pthread_t threads[srcImage->height];
@@ -128,11 +115,10 @@ void convolute(Image* srcImage,Image* destImage,Matrix algorithm){
         threadArgs[row] = threadPointer;
         threadArgs[row].start_line = row * n;
         threadArgs[row].end_line = ((row + 1) * n) - 1;
-        if (threadArgs[row].start_line >= threadArgs[row].end_line) { // For n=1 edge case
-            threadArgs[row].end_line = threadArgs[row].start_line+ + 1;
-        }
-        // printf("Starting at %i and ending at %i\n", threadArgs[row].start_line, threadArgs[row].end_line);
-        //printf("CON start_line: %i\n",threadArgs[row].start_line);
+/*         if (threadArgs[row].start_line >= threadArgs[row].end_line) { // For n=1 case
+            threadArgs[row].end_line = threadArgs[row].start_line + 1;
+        } */
+        //printf("Starting at %i and ending at %i\n", threadArgs[row].start_line, threadArgs[row].end_line);
         pthread_create(&threads[row], NULL, &thread_loop, &threadArgs[row]);
     } 
 
@@ -175,7 +161,6 @@ enum KernelTypes GetKernelType(char* type){
 //main:
 //argv is expected to take 2 arguments.  First is the source file name (can be jpg, png, bmp, tga).  Second is the lower case name of the algorithm.
 int main(int argc,char** argv){
-    printf("in main\n");
     long t1,t2;
     t1=time(NULL);
 
@@ -183,7 +168,6 @@ int main(int argc,char** argv){
     if (argc!=3) return Usage(); // why does argc have to be 3 when there are 2 argumants? Doesnt seem to affect running
     char* fileName=argv[1];
 
-    //CONSTANT FILENAME FOR DEBUGGING
 
     if (!strcmp(argv[1],"pic4.jpg")&&!strcmp(argv[2],"gauss")){
         printf("You have applied a gaussian filter to Gauss which has caused a tear in the time-space continum.\n");
