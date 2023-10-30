@@ -3,7 +3,6 @@
 #include <time.h>
 #include <string.h>
 #include "image.h"
-#include <pthread.h>
 
 
 #define STB_IMAGE_IMPLEMENTATION
@@ -11,17 +10,6 @@
 
 #define STB_IMAGE_WRITE_IMPLEMENTATION
 #include "stb_image_write.h"
-
-/* struct to handle all the parameters that must be passes into thread 
-    (since threads can only take a single void* parameter) */
-struct ThreadData {
-    uint8_t* data;
-    Image* srcImage;
-    Image* destImage;
-    Matrix algorithm;
-    int start_line;
-    int end_line;
-};
 
 //An array of kernel matrices to be used for image convolution.  
 //The indexes of these match the enumeration from the header file. ie. algorithms[BLUR] returns the kernel corresponding to a box blur.
@@ -64,82 +52,23 @@ uint8_t getPixelValue(Image* srcImage,int x,int y,int bit,Matrix algorithm){
     return result;
 }
 
-
-// can only pass in one void pointer, but can be a struct
-// can't make a new struct cause cannot modify header file but do have the Image struct? ASK PROFESSOR IF ALLOWED/OFFICE HOURS
-//    NVM can declare it in source files
-// IDEA: pass an Image struct that points to a chunk of the srcImage 
-void* thread_loop(void* threadPointer) {
-    printf("in thread loop\n");
-    struct ThreadData* dataPointer = (struct ThreadData*)threadPointer;
-
-    int start_line = dataPointer->start_line;
-    int end_line = dataPointer->end_line;
-    uint8_t* data = dataPointer->data;
-    //Matrix* algorithm = dataPointer->algorithm;
-    Image* srcImage = dataPointer->srcImage;
-    Image* destImage = dataPointer->destImage;
-
-    // may try make each thread a row instead?
-    int row,pix,bit;
-    for (row=start_line;row<end_line;row++){
-        // launch thread
-        for (pix=0;pix<srcImage->width;pix++){
-            for (bit=0;bit<srcImage->bpp;bit++){
-                destImage->data[Index(pix,row,srcImage->width,bit,srcImage->bpp)]=getPixelValue(srcImage,pix,row,bit,dataPointer->algorithm);
-            }
-        }
-    }
-}
-
 //convolute:  Applies a kernel matrix to an image
 //Parameters: srcImage: The image being convoluted
 //            destImage: A pointer to a  pre-allocated (including space for the pixel array) structure to receive the convoluted image.  It should be the same size as srcImage
 //            algorithm: The kernel matrix to use for the convolution
 //Returns: Nothing
 void convolute(Image* srcImage,Image* destImage,Matrix algorithm){
-    printf("in convolute\n");
     int row,pix,bit,span;
     span=srcImage->bpp*srcImage->bpp; // what is span used for here?
-    
-    struct ThreadData threadData;
-    struct ThreadData* threadPointer = &threadData;
-    printf("before\n");
-    threadPointer->srcImage=srcImage;
-    printf("after\n");
-    threadPointer->destImage=destImage;
-    for (int i=0;i<3;i++) {
-        for (int j=0;j<3;j++) {
-            threadPointer->algorithm[i][j]=algorithm[i][j];  
-        }
-    }
-    //threadPointer->algorithm[0][0]=algorithm[0][0];
-    //threadPointer->data=malloc(sizeof(uint8_t)*destImage->width*destImage->bpp*destImage->height);
-
-    // threadArgs is an empty pointer and also never does threadData get passed, need to do without race conditions
-    pthread_t threads[srcImage->height];
-    struct ThreadData* threadArgs[srcImage->height];
+    // PARALLIZE HERE BY ROW, may need to create another function to create threads for? or call convelute in each thread?
     for (row=0;row<srcImage->height;row++){
-        threadArgs[row]->start_line = row;
-        pthread_create(&threads[row], NULL, &thread_loop, &threadArgs[row]);
-    } 
-
-    for (row=0;row<srcImage->height;row++) {
-        pthread_join(threads[row], NULL);
-    }
-
-
-/*     // PARALLIZE HERE BY ROW, may need to create another function to create threads for? or call convelute in each thread?
-    for (row=0;row<srcImage->height;row++){
-        // launch thread
         for (pix=0;pix<srcImage->width;pix++){
             for (bit=0;bit<srcImage->bpp;bit++){
                 destImage->data[Index(pix,row,srcImage->width,bit,srcImage->bpp)]=getPixelValue(srcImage,pix,row,bit,algorithm);
             }
         }
-    } */
-} 
-
+    }
+}
 
 //Usage: Prints usage information for the program
 //Returns: -1
@@ -163,16 +92,12 @@ enum KernelTypes GetKernelType(char* type){
 //main:
 //argv is expected to take 2 arguments.  First is the source file name (can be jpg, png, bmp, tga).  Second is the lower case name of the algorithm.
 int main(int argc,char** argv){
-    printf("in main\n");
     long t1,t2;
     t1=time(NULL);
 
     stbi_set_flip_vertically_on_load(0); 
     if (argc!=3) return Usage(); // why does argc have to be 3 when there are 2 argumants? Doesnt seem to affect running
     char* fileName=argv[1];
-
-    //CONSTANT FILENAME FOR DEBUGGING
-
     if (!strcmp(argv[1],"pic4.jpg")&&!strcmp(argv[2],"gauss")){
         printf("You have applied a gaussian filter to Gauss which has caused a tear in the time-space continum.\n");
     }
