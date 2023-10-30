@@ -71,11 +71,11 @@ uint8_t getPixelValue(Image* srcImage,int x,int y,int bit,Matrix algorithm){
 void* thread_loop(void* threadPointer) {
     struct ThreadData* dataPointer = (struct ThreadData*)threadPointer;
 
-    printf("DATA: %p\n", (void*) dataPointer);
+    //printf("DATA: %p\n", (void*) dataPointer);
 
     int start_line = dataPointer->start_line;
-    printf("in thread %i\n", start_line);
-    printf("%i\n",start_line);
+    //printf("in thread %i\n", start_line);
+    //printf("%i\n",start_line);
     int end_line = dataPointer->end_line;
     //uint8_t* data = dataPointer->data;
     //Matrix* algorithm = dataPointer->algorithm;
@@ -103,15 +103,13 @@ void* thread_loop(void* threadPointer) {
 //            algorithm: The kernel matrix to use for the convolution
 //Returns: Nothing
 void convolute(Image* srcImage,Image* destImage,Matrix algorithm){
-    printf("in convolute\n");
+    // printf("in convolute\n");
     int row,pix,bit,span;
     span=srcImage->bpp*srcImage->bpp; // what is span used for here?
     
     struct ThreadData threadData;
     struct ThreadData threadPointer = threadData;
-    printf("before\n");
     threadPointer.srcImage=srcImage;
-    printf("after\n");
     threadPointer.destImage=destImage;
     for (int i=0;i<3;i++) {
         for (int j=0;j<3;j++) {
@@ -126,12 +124,15 @@ void convolute(Image* srcImage,Image* destImage,Matrix algorithm){
     int height = srcImage->height / n;
     pthread_t threads[srcImage->height];
     struct ThreadData threadArgs[srcImage->height];
-    //printf("HEIGHT = %i\n", srcImage->height);
     for (row=0;row<height;row++){
         threadArgs[row] = threadPointer;
         threadArgs[row].start_line = row * n;
         threadArgs[row].end_line = ((row + 1) * n) - 1;
-        printf("CON start_line: %i\n",threadArgs[row].start_line);
+        if (threadArgs[row].start_line >= threadArgs[row].end_line) { // For n=1 edge case
+            threadArgs[row].end_line = threadArgs[row].start_line+ + 1;
+        }
+        // printf("Starting at %i and ending at %i\n", threadArgs[row].start_line, threadArgs[row].end_line);
+        //printf("CON start_line: %i\n",threadArgs[row].start_line);
         pthread_create(&threads[row], NULL, &thread_loop, &threadArgs[row]);
     } 
 
